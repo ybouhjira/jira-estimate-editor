@@ -1,53 +1,33 @@
 // Jira Estimate Editor - Content Script
-// This script runs on Jira pages and handles estimate updates
+// Clean UI design: No permanent icons, toggle-based estimate mode
 
 (function() {
   console.log('😾 Jira Estimate Editor loaded');
 
   const ESTIMATE_VALUES = [0.1, 0.2, 0.5, 1, 1.5, 2, 3];
-  let iconsAdded = false;
 
-  // Listen for messages from the popup
-  window.addEventListener('message', async (event) => {
-    if (event.data.type === 'JIRA_ESTIMATE_UPDATE') {
-      const { issueKey, value } = event.data;
-      console.log('😸 Received estimate update request:', issueKey, value);
-      await updateEstimate(issueKey, value);
-    }
-  });
+  let estimateModeActive = false;
+  let currentPicker = null;
+  let fab = null;
+  let statusBar = null;
+  let keyboardHint = null;
+  let ticketData = new Map(); // issueKey -> {estimate, element}
 
-  // Also listen for chrome runtime messages
-  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.type === 'UPDATE_ESTIMATE') {
-      updateEstimate(message.issueKey, message.value)
-        .then(() => sendResponse({ success: true }))
-        .catch(err => sendResponse({ success: false, error: err.message }));
-      return true;
-    }
+  // ============================================
+  // INITIALIZATION
+  // ============================================
 
-    if (message.type === 'GET_TICKETS') {
-      const tickets = extractAllTickets();
-      sendResponse({ tickets });
-      return true;
-    }
-  });
-
-  // Initialize: add icons to cards
   function init() {
-    console.log('😺 Initializing estimate icons');
-    addEstimateIconsToCards();
+    console.log('😺 Initializing Jira Estimate Editor');
+    createFAB();
+    createStatusBar();
+    createKeyboardHint();
+    scanTickets();
 
-    // Re-add icons when DOM changes (Jira is very dynamic)
-    const observer = new MutationObserver((mutations) => {
-      let shouldUpdate = false;
-      for (const mutation of mutations) {
-        if (mutation.addedNodes.length > 0) {
-          shouldUpdate = true;
-          break;
-        }
-      }
-      if (shouldUpdate) {
-        setTimeout(addEstimateIconsToCards, 100);
+    // Re-scan when DOM changes
+    const observer = new MutationObserver(() => {
+      if (estimateModeActive) {
+        setTimeout(scanTickets, 100);
       }
     });
 
@@ -57,11 +37,113 @@
     });
   }
 
-  function addEstimateIconsToCards() {
-    // Find all Jira cards (on-premise uses ghx-issue class)
+  // ============================================
+  // UI COMPONENTS
+  // ============================================
+
+  function createFAB() {
+    fab = document.createElement('button');
+    fab.className = 'jee-fab';
+    fab.innerHTML = '⏱';
+    fab.title = 'Toggle Estimate Mode (Alt+E)';
+
+    fab.addEventListener('click', toggleEstimateMode);
+
+    // Show keyboard hint on first hover
+    let hasShownHint = false;
+    fab.addEventListener('mouseenter', () => {
+      if (!hasShownHint && keyboardHint) {
+        hasShownHint = true;
+        keyboardHint.classList.add('visible');
+        setTimeout(() => keyboardHint.classList.remove('visible'), 3000);
+      }
+    });
+
+    document.body.appendChild(fab);
+  }
+
+  function createStatusBar() {
+    statusBar = document.createElement('div');
+    statusBar.className = 'jee-status-bar';
+    statusBar.innerHTML = `
+      <div class="jee-status-item">
+        <span id="jee-ticket-count">0 tickets</span>
+      </div>
+      <div class="jee-status-divider"></div>
+      <div class="jee-status-item">
+        <strong id="jee-total-estimate">0d</strong> total
+      </div>
+      <div class="jee-status-divider"></div>
+      <div class="jee-status-item">
+        <span id="jee-unestimated-count">0 unestimated</span>
+      </div>
+      <button class="jee-status-close" title="Close (Esc)">✕</button>
+    `;
+
+    statusBar.querySelector('.jee-status-close').addEventListener('click', () => {
+      toggleEstimateMode(false);
+    });
+
+    document.body.appendChild(statusBar);
+  }
+
+  function createKeyboardHint() {
+    keyboardHint = document.createElement('div');
+    keyboardHint.className = 'jee-keyboard-hint';
+    keyboardHint.innerHTML = 'Press <kbd>Alt</kbd>+<kbd>E</kbd> to toggle';
+    document.body.appendChild(keyboardHint);
+  }
+
+  // ============================================
+  // ESTIMATE MODE TOGGLE
+  // ============================================
+
+  function toggleEstimateMode(active) {
+    if (active === undefined) {
+      active = !estimateModeActive;
+    }
+
+    estimateModeActive = active;
+
+    if (estimateModeActive) {
+      enterEstimateMode();
+    } else {
+      exitEstimateMode();
+    }
+  }
+
+  function enterEstimateMode() {
+    console.log('😺 Entering estimate mode');
+
+    document.body.classList.add('jee-estimate-mode-active');
+    fab?.classList.add('active');
+    statusBar?.classList.add('visible');
+
+    scanTickets();
+    addCardBadges();
+    attachCardListeners();
+    updateStatusBar();
+  }
+
+  function exitEstimateMode() {
+    console.log('😺 Exiting estimate mode');
+
+    document.body.classList.remove('jee-estimate-mode-active');
+    fab?.classList.remove('active');
+    statusBar?.classList.remove('visible');
+
+    removeCardBadges();
+    removeCardListeners();
+    closePicker();
+  }
+
+  // ============================================
+  // TICKET SCANNING
+  // ============================================
+
+  function scanTickets() {
     const cardSelectors = [
       '.ghx-issue',
-      '.ghx-issue-content',
       '[data-testid*="card"]',
       '[data-rbd-draggable-id]'
     ];
@@ -70,92 +152,76 @@
     console.log('😺 Found', cards.length, 'cards');
 
     cards.forEach(card => {
-      // Skip if already has our icon
-      if (card.querySelector('.jee-estimate-icon')) return;
-
-      // Find the issue key
       const issueKey = findIssueKey(card);
       if (!issueKey) return;
 
-      // Find current estimate
-      const currentEstimate = findEstimateOnCard(card);
+      const estimate = findEstimateOnCard(card);
 
-      // Create the icon with popup
-      const icon = createEstimateIcon(issueKey, currentEstimate);
-
-      // Add to card - find the best container
-      const container = card.querySelector('.ghx-issue-content') || card;
-      container.style.position = 'relative';
-      container.appendChild(icon);
+      ticketData.set(issueKey, {
+        estimate,
+        element: card
+      });
     });
+
+    if (estimateModeActive) {
+      updateStatusBar();
+    }
   }
 
   function findIssueKey(card) {
-    // Try data attribute
     const keyAttr = card.getAttribute('data-issue-key');
     if (keyAttr) return keyAttr;
 
-    // Try link
     const link = card.querySelector('a[href*="/browse/"]');
     if (link) {
       const match = link.href.match(/([A-Z][A-Z0-9]+-\d+)/);
       if (match) return match[1];
     }
 
-    // Try key element
     const keyEl = card.querySelector('.ghx-key a, [data-testid*="issue-key"]');
     if (keyEl) {
       const text = keyEl.textContent?.trim();
       if (text && /^[A-Z][A-Z0-9]+-\d+$/.test(text)) return text;
     }
 
-    // Try text content
     const textMatch = card.textContent?.match(/([A-Z][A-Z0-9]+-\d+)/);
     return textMatch ? textMatch[1] : null;
   }
 
   function findEstimateOnCard(card) {
-    // On-premise Jira often shows estimates in specific elements
     const estimateSelectors = [
-      '.ghx-estimate',                    // Classic board estimate
-      '.ghx-statistic-badge',             // Statistic badge
-      '[data-tooltip*="Story Points"]',   // Story points tooltip
-      '.aui-badge',                        // AUI badge
-      '[class*="storypoint"]',            // Story point class
-      '[class*="estimate"]'               // Estimate class
+      '.ghx-estimate',
+      '.ghx-statistic-badge',
+      '[data-tooltip*="Story Points"]',
+      '.aui-badge',
+      '[class*="storypoint"]',
+      '[class*="estimate"]'
     ];
 
     for (const sel of estimateSelectors) {
       const el = card.querySelector(sel);
       if (el) {
-        const text = el.textContent?.trim();
-        const val = parseFloat(text);
+        const val = parseFloat(el.textContent?.trim());
         if (!isNaN(val) && val >= 0 && val <= 100) {
-          console.log('😺 Found estimate', val, 'for card using selector', sel);
           return val;
         }
       }
     }
 
-    // Look for any element with just a number that could be an estimate
+    // Look for leaf nodes with numbers
     const allElements = card.querySelectorAll('*');
     for (const el of allElements) {
-      if (el.children.length === 0) { // Leaf nodes only
+      if (el.children.length === 0) {
         const text = el.textContent?.trim();
-        // Match numbers like 0.5, 1, 2, 3, etc.
         if (/^[0-9]+\.?[0-9]*$/.test(text)) {
           const val = parseFloat(text);
           if (!isNaN(val) && val >= 0 && val <= 21) {
-            // Check if this looks like an estimate (small number in a badge-like element)
-            const styles = window.getComputedStyle(el);
             const parent = el.parentElement;
             if (parent && (
               parent.classList.contains('ghx-stat-1') ||
               parent.classList.contains('ghx-estimate') ||
-              styles.fontWeight === '700' ||
-              styles.fontWeight === 'bold'
+              parent.className.includes('statistic')
             )) {
-              console.log('😺 Found estimate', val, 'in leaf node');
               return val;
             }
           }
@@ -166,117 +232,231 @@
     return null;
   }
 
-  function createEstimateIcon(issueKey, currentEstimate) {
-    const icon = document.createElement('div');
-    icon.className = 'jee-estimate-icon' + (currentEstimate !== null ? ' has-value' : '');
-    icon.textContent = currentEstimate !== null ? currentEstimate : '⏱';
-    icon.dataset.issueKey = issueKey;
+  // ============================================
+  // CARD BADGES & INTERACTION
+  // ============================================
 
-    // Create popup
-    const popup = document.createElement('div');
-    popup.className = 'jee-estimate-popup';
-    popup.innerHTML = `
-      <div class="jee-estimate-popup-title">Days</div>
-      <div class="jee-estimate-popup-buttons">
+  function addCardBadges() {
+    ticketData.forEach((data, issueKey) => {
+      if (data.element.querySelector('.jee-card-estimate-badge')) return;
+
+      const badge = document.createElement('div');
+      badge.className = 'jee-card-estimate-badge';
+
+      if (data.estimate !== null) {
+        badge.textContent = `${data.estimate}d`;
+        badge.classList.add('has-value');
+      } else {
+        badge.textContent = '-';
+        badge.classList.add('no-value');
+      }
+
+      badge.dataset.issueKey = issueKey;
+
+      const container = data.element.querySelector('.ghx-issue-content') || data.element;
+      container.appendChild(badge);
+    });
+  }
+
+  function removeCardBadges() {
+    document.querySelectorAll('.jee-card-estimate-badge').forEach(badge => {
+      badge.remove();
+    });
+  }
+
+  function attachCardListeners() {
+    ticketData.forEach((data, issueKey) => {
+      data.element.addEventListener('click', handleCardClick);
+      data.element.dataset.jeeIssueKey = issueKey;
+    });
+  }
+
+  function removeCardListeners() {
+    ticketData.forEach((data) => {
+      data.element.removeEventListener('click', handleCardClick);
+      delete data.element.dataset.jeeIssueKey;
+    });
+  }
+
+  function handleCardClick(e) {
+    // Don't intercept if clicking on a link or button
+    if (e.target.closest('a, button, input, textarea')) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const issueKey = this.dataset.jeeIssueKey;
+    const data = ticketData.get(issueKey);
+
+    if (!data) return;
+
+    showEstimatePicker(issueKey, data.estimate, e);
+  }
+
+  // ============================================
+  // ESTIMATE PICKER
+  // ============================================
+
+  function showEstimatePicker(issueKey, currentEstimate, clickEvent) {
+    closePicker();
+
+    currentPicker = document.createElement('div');
+    currentPicker.className = 'jee-estimate-picker';
+    currentPicker.innerHTML = `
+      <div class="jee-estimate-picker-header">
+        <span class="jee-estimate-picker-title">Estimate (days)</span>
+        <span class="jee-estimate-picker-key">${issueKey}</span>
+      </div>
+      <div class="jee-estimate-picker-buttons">
         ${ESTIMATE_VALUES.map(val => `
-          <button class="jee-estimate-popup-btn${currentEstimate === val ? ' active' : ''}"
+          <button class="jee-estimate-picker-btn${currentEstimate === val ? ' active' : ''}"
                   data-value="${val}">${val}</button>
         `).join('')}
       </div>
+      <div class="jee-estimate-picker-custom">
+        <input type="number"
+               class="jee-estimate-picker-input"
+               placeholder="Custom"
+               step="0.1"
+               min="0">
+        <button class="jee-estimate-picker-set">Set</button>
+      </div>
     `;
 
-    // Add click handlers to buttons
-    popup.querySelectorAll('.jee-estimate-popup-btn').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        e.preventDefault();
+    document.body.appendChild(currentPicker);
 
+    // Position near click
+    const rect = clickEvent.target.getBoundingClientRect();
+    let top = rect.top + window.scrollY;
+    let left = rect.right + window.scrollX + 10;
+
+    // Keep on screen
+    const pickerRect = currentPicker.getBoundingClientRect();
+    if (left + pickerRect.width > window.innerWidth) {
+      left = rect.left + window.scrollX - pickerRect.width - 10;
+    }
+    if (top + pickerRect.height > window.innerHeight + window.scrollY) {
+      top = window.innerHeight + window.scrollY - pickerRect.height - 10;
+    }
+
+    currentPicker.style.top = `${top}px`;
+    currentPicker.style.left = `${left}px`;
+
+    // Show with animation
+    setTimeout(() => currentPicker?.classList.add('visible'), 10);
+
+    // Add event listeners
+    currentPicker.querySelectorAll('.jee-estimate-picker-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
         const value = parseFloat(btn.dataset.value);
-        console.log('😸 Setting estimate for', issueKey, 'to', value);
-
-        icon.classList.add('loading');
-        icon.textContent = '...';
-
-        const success = await updateEstimate(issueKey, value);
-
-        icon.classList.remove('loading');
-
-        if (success) {
-          icon.textContent = value;
-          icon.classList.add('has-value');
-
-          // Update active state
-          popup.querySelectorAll('.jee-estimate-popup-btn').forEach(b => {
-            b.classList.toggle('active', parseFloat(b.dataset.value) === value);
-          });
-
-          showToast(`✓ ${issueKey} → ${value}d`, 'success');
-        } else {
-          icon.textContent = currentEstimate !== null ? currentEstimate : '⏱';
-          showToast(`✗ Failed to update ${issueKey}`, 'error');
-        }
+        await setEstimate(issueKey, value);
+        closePicker();
       });
     });
 
-    icon.appendChild(popup);
-    return icon;
+    const customInput = currentPicker.querySelector('.jee-estimate-picker-input');
+    const setBtn = currentPicker.querySelector('.jee-estimate-picker-set');
+
+    setBtn.addEventListener('click', async () => {
+      const value = parseFloat(customInput.value);
+      if (!isNaN(value) && value >= 0) {
+        await setEstimate(issueKey, value);
+        closePicker();
+      }
+    });
+
+    customInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        setBtn.click();
+      }
+    });
+
+    // Close on outside click
+    setTimeout(() => {
+      document.addEventListener('click', closePickerOnOutsideClick);
+    }, 100);
   }
 
-  async function updateEstimate(issueKey, value) {
-    console.log('😼 Attempting to update estimate for', issueKey, 'to', value);
+  function closePickerOnOutsideClick(e) {
+    if (currentPicker && !currentPicker.contains(e.target)) {
+      closePicker();
+    }
+  }
 
+  function closePicker() {
+    if (currentPicker) {
+      currentPicker.remove();
+      currentPicker = null;
+      document.removeEventListener('click', closePickerOnOutsideClick);
+    }
+  }
+
+  // ============================================
+  // ESTIMATE UPDATE
+  // ============================================
+
+  async function setEstimate(issueKey, value) {
+    console.log('😸 Setting estimate for', issueKey, 'to', value);
+
+    const success = await updateEstimateViaAPI(issueKey, value);
+
+    if (success) {
+      // Update local data
+      const data = ticketData.get(issueKey);
+      if (data) {
+        data.estimate = value;
+
+        // Update badge
+        const badge = data.element.querySelector('.jee-card-estimate-badge');
+        if (badge) {
+          badge.textContent = `${value}d`;
+          badge.classList.remove('no-value');
+          badge.classList.add('has-value');
+        }
+      }
+
+      updateStatusBar();
+      showToast(`✓ ${issueKey} → ${value}d`, 'success');
+    } else {
+      showToast(`✗ Failed to update ${issueKey}`, 'error');
+    }
+
+    return success;
+  }
+
+  async function updateEstimateViaAPI(issueKey, value) {
     const baseUrl = window.location.origin;
 
     try {
-      // First, get the issue to find the story points field ID
       const issueResponse = await fetch(`${baseUrl}/rest/api/2/issue/${issueKey}?expand=editmeta`, {
         credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        }
+        headers: { 'Content-Type': 'application/json' }
       });
 
       if (!issueResponse.ok) {
-        console.log('😿 Failed to fetch issue:', issueResponse.status);
         throw new Error(`Failed to fetch issue: ${issueResponse.status}`);
       }
 
       const issueData = await issueResponse.json();
-      console.log('😺 Got issue data:', issueKey);
-
-      // Find the story points field
       const storyPointsFieldId = findStoryPointsField(issueData);
 
       if (!storyPointsFieldId) {
-        console.log('😿 Could not find story points field');
         throw new Error('Could not find story points field');
       }
-
-      console.log('😸 Found story points field:', storyPointsFieldId);
-
-      // Update the estimate
-      const updatePayload = {
-        fields: {
-          [storyPointsFieldId]: value
-        }
-      };
 
       const updateResponse = await fetch(`${baseUrl}/rest/api/2/issue/${issueKey}`, {
         method: 'PUT',
         credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(updatePayload)
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fields: { [storyPointsFieldId]: value }
+        })
       });
 
       if (!updateResponse.ok) {
-        const errorText = await updateResponse.text();
-        console.log('😿 Update failed:', errorText);
         throw new Error(`Update failed: ${updateResponse.status}`);
       }
 
-      console.log('😻 Successfully updated estimate for', issueKey);
       return true;
     } catch (error) {
       console.log('😿 Error updating estimate:', error);
@@ -285,36 +465,25 @@
   }
 
   function findStoryPointsField(issueData) {
-    // Check edit metadata first
+    // Check edit metadata
     if (issueData.editmeta?.fields) {
       for (const [fieldId, fieldMeta] of Object.entries(issueData.editmeta.fields)) {
         const name = fieldMeta.name?.toLowerCase() || '';
-        if (name.includes('story point') ||
-            name.includes('estimate') ||
-            name.includes('points')) {
+        if (name.includes('story point') || name.includes('estimate') || name.includes('points')) {
           return fieldId;
         }
       }
     }
 
-    // Check actual fields
-    const fields = issueData.fields || {};
-
-    // Common story points field IDs
+    // Common field IDs
     const commonFieldIds = [
-      'customfield_10016',
-      'customfield_10004',
-      'customfield_10006',
-      'customfield_10026',
-      'customfield_10002',
-      'customfield_10014',
-      'customfield_10034'
+      'customfield_10016', 'customfield_10004', 'customfield_10006',
+      'customfield_10026', 'customfield_10002', 'customfield_10014', 'customfield_10034'
     ];
 
+    const fields = issueData.fields || {};
     for (const fieldId of commonFieldIds) {
-      if (fieldId in fields) {
-        return fieldId;
-      }
+      if (fieldId in fields) return fieldId;
     }
 
     // Look for any numeric custom field
@@ -324,8 +493,37 @@
       }
     }
 
-    return 'customfield_10016'; // Default fallback
+    return 'customfield_10016';
   }
+
+  // ============================================
+  // STATUS BAR UPDATE
+  // ============================================
+
+  function updateStatusBar() {
+    if (!statusBar) return;
+
+    let total = 0;
+    let estimated = 0;
+    let count = ticketData.size;
+
+    ticketData.forEach((data) => {
+      if (data.estimate !== null && data.estimate !== undefined) {
+        total += data.estimate;
+        estimated++;
+      }
+    });
+
+    const unestimated = count - estimated;
+
+    document.getElementById('jee-ticket-count').textContent = `${count} ticket${count !== 1 ? 's' : ''}`;
+    document.getElementById('jee-total-estimate').textContent = `${total}d`;
+    document.getElementById('jee-unestimated-count').textContent = `${unestimated} unestimated`;
+  }
+
+  // ============================================
+  // TOAST NOTIFICATIONS
+  // ============================================
 
   function showToast(message, type = '') {
     const existing = document.querySelector('.jee-toast');
@@ -336,75 +534,68 @@
     toast.textContent = message;
     document.body.appendChild(toast);
 
-    setTimeout(() => toast.remove(), 3000);
+    setTimeout(() => toast.remove(), 2000);
   }
 
-  function extractAllTickets() {
-    const tickets = [];
-    const seen = new Set();
+  // ============================================
+  // KEYBOARD SHORTCUTS
+  // ============================================
 
-    // Find all cards
-    const cardSelectors = [
-      '.ghx-issue',
-      '[data-testid*="card"]',
-      '[data-rbd-draggable-id]'
-    ];
-
-    document.querySelectorAll(cardSelectors.join(', ')).forEach(card => {
-      const key = findIssueKey(card);
-      if (key && !seen.has(key)) {
-        seen.add(key);
-        tickets.push({
-          key,
-          summary: findSummary(card),
-          estimate: findEstimateOnCard(card),
-          issueType: findIssueType(card)
-        });
-      }
-    });
-
-    // Also find via links
-    const issueLinks = document.querySelectorAll('a[href*="/browse/"]');
-    issueLinks.forEach(link => {
-      const match = link.href?.match(/([A-Z][A-Z0-9]+-\d+)/);
-      if (match && !seen.has(match[1])) {
-        seen.add(match[1]);
-        const container = link.closest('.ghx-issue, [data-testid*="card"], [data-rbd-draggable-id]') || link.parentElement;
-        tickets.push({
-          key: match[1],
-          summary: findSummary(container),
-          estimate: findEstimateOnCard(container),
-          issueType: findIssueType(container)
-        });
-      }
-    });
-
-    console.log('😺 Extracted', tickets.length, 'tickets');
-    return tickets;
-  }
-
-  function findSummary(element) {
-    if (!element) return '';
-
-    const summarySelectors = [
-      '.ghx-summary',
-      '.ghx-inner',
-      '[data-testid*="summary"]'
-    ];
-
-    for (const sel of summarySelectors) {
-      const el = element.querySelector(sel);
-      if (el) {
-        return el.textContent?.trim().substring(0, 100) || '';
-      }
+  document.addEventListener('keydown', (e) => {
+    // Alt+E: Toggle estimate mode
+    if (e.altKey && e.key === 'e') {
+      e.preventDefault();
+      toggleEstimateMode();
     }
 
+    // Escape: Close picker or exit mode
+    if (e.key === 'Escape') {
+      if (currentPicker) {
+        closePicker();
+      } else if (estimateModeActive) {
+        toggleEstimateMode(false);
+      }
+    }
+  });
+
+  // ============================================
+  // MESSAGE LISTENERS (for popup integration)
+  // ============================================
+
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.type === 'GET_TICKETS') {
+      scanTickets();
+      const tickets = [];
+      ticketData.forEach((data, key) => {
+        tickets.push({
+          key,
+          estimate: data.estimate,
+          summary: findSummary(data.element),
+          issueType: findIssueType(data.element)
+        });
+      });
+      sendResponse({ tickets });
+      return true;
+    }
+
+    if (message.type === 'UPDATE_ESTIMATE') {
+      setEstimate(message.issueKey, message.value)
+        .then(() => sendResponse({ success: true }))
+        .catch(err => sendResponse({ success: false, error: err.message }));
+      return true;
+    }
+  });
+
+  function findSummary(element) {
+    const summarySelectors = ['.ghx-summary', '.ghx-inner', '[data-testid*="summary"]'];
+    for (const sel of summarySelectors) {
+      const el = element.querySelector(sel);
+      if (el) return el.textContent?.trim().substring(0, 100) || '';
+    }
     return element.textContent?.trim().substring(0, 100) || '';
   }
 
   function findIssueType(element) {
-    if (!element) return 'task';
-
     const typeImg = element.querySelector('img[alt]');
     if (typeImg) {
       const alt = typeImg.alt.toLowerCase();
@@ -413,164 +604,13 @@
       if (alt.includes('epic')) return 'epic';
       if (alt.includes('subtask')) return 'subtask';
     }
-
     return 'task';
   }
 
-  // Add keyboard shortcut
-  document.addEventListener('keydown', (e) => {
-    if (e.altKey && e.key === 'e') {
-      e.preventDefault();
-      toggleEstimateOverlay();
-    }
-  });
+  // ============================================
+  // START
+  // ============================================
 
-  let overlayVisible = false;
-
-  function toggleEstimateOverlay() {
-    if (overlayVisible) {
-      removeEstimateOverlay();
-      return;
-    }
-
-    const tickets = extractAllTickets();
-    if (tickets.length === 0) {
-      console.log('😿 No tickets found on page');
-      return;
-    }
-
-    createEstimateOverlay(tickets);
-    overlayVisible = true;
-  }
-
-  function createEstimateOverlay(tickets) {
-    const overlay = document.createElement('div');
-    overlay.id = 'jira-estimate-overlay';
-    overlay.innerHTML = `
-      <div class="jee-overlay-content">
-        <div class="jee-header">
-          <h2>📊 Quick Estimate Editor</h2>
-          <button class="jee-close">&times;</button>
-        </div>
-        <div class="jee-tickets">
-          ${tickets.map(t => `
-            <div class="jee-ticket">
-              <span class="jee-key">${t.key}</span>
-              <span class="jee-summary">${escapeHtml(t.summary)}</span>
-              <input type="number" class="jee-input" data-key="${t.key}"
-                     value="${t.estimate !== null ? t.estimate : ''}"
-                     placeholder="-" min="0" step="0.1">
-            </div>
-          `).join('')}
-        </div>
-        <div class="jee-footer">
-          <span>Press Esc to close or Alt+E to toggle</span>
-        </div>
-      </div>
-    `;
-
-    document.body.appendChild(overlay);
-
-    const style = document.createElement('style');
-    style.id = 'jira-estimate-overlay-styles';
-    style.textContent = `
-      #jira-estimate-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0,0,0,0.5);
-        z-index: 100000;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      }
-      .jee-overlay-content {
-        background: white;
-        border-radius: 12px;
-        width: 90%;
-        max-width: 600px;
-        max-height: 80vh;
-        display: flex;
-        flex-direction: column;
-        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-      }
-      .jee-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 16px 20px;
-        border-bottom: 1px solid #dfe1e6;
-      }
-      .jee-header h2 { margin: 0; font-size: 18px; color: #172b4d; }
-      .jee-close {
-        background: none; border: none; font-size: 24px;
-        cursor: pointer; color: #5e6c84; padding: 4px 8px;
-      }
-      .jee-tickets { overflow-y: auto; padding: 12px; flex: 1; }
-      .jee-ticket {
-        display: flex; align-items: center; gap: 12px;
-        padding: 10px 12px; border-radius: 6px;
-        margin-bottom: 8px; background: #f4f5f7;
-      }
-      .jee-key { font-weight: 600; color: #0052cc; min-width: 100px; font-size: 13px; }
-      .jee-summary {
-        flex: 1; font-size: 13px; color: #172b4d;
-        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-      }
-      .jee-input {
-        width: 60px; padding: 8px; border: 2px solid #dfe1e6;
-        border-radius: 6px; font-size: 14px; font-weight: 600; text-align: center;
-      }
-      .jee-input:focus { outline: none; border-color: #0052cc; }
-      .jee-input.saving { border-color: #ff991f; background: #fffae6; }
-      .jee-input.saved { border-color: #36b37e; background: #e3fcef; }
-      .jee-footer {
-        padding: 12px 20px; border-top: 1px solid #dfe1e6;
-        text-align: center; font-size: 12px; color: #5e6c84;
-      }
-    `;
-    document.head.appendChild(style);
-
-    overlay.querySelector('.jee-close').addEventListener('click', removeEstimateOverlay);
-    overlay.addEventListener('click', (e) => {
-      if (e.target === overlay) removeEstimateOverlay();
-    });
-    document.addEventListener('keydown', handleOverlayKeydown);
-
-    overlay.querySelectorAll('.jee-input').forEach(input => {
-      input.addEventListener('change', async () => {
-        const key = input.dataset.key;
-        const value = input.value ? parseFloat(input.value) : null;
-        input.classList.add('saving');
-        const success = await updateEstimate(key, value);
-        input.classList.remove('saving');
-        input.classList.add(success ? 'saved' : 'error');
-        setTimeout(() => input.classList.remove('saved', 'error'), 2000);
-      });
-    });
-  }
-
-  function handleOverlayKeydown(e) {
-    if (e.key === 'Escape') removeEstimateOverlay();
-  }
-
-  function removeEstimateOverlay() {
-    document.getElementById('jira-estimate-overlay')?.remove();
-    document.getElementById('jira-estimate-overlay-styles')?.remove();
-    document.removeEventListener('keydown', handleOverlayKeydown);
-    overlayVisible = false;
-  }
-
-  function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text || '';
-    return div.innerHTML;
-  }
-
-  // Initialize when DOM is ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
