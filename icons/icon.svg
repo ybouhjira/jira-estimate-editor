@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- Background -->
+  <rect width="128" height="128" rx="24" fill="#0052CC"/>
+
+  <!-- Ticket shape -->
+  <rect x="20" y="30" width="88" height="68" rx="8" fill="white" opacity="0.95"/>
+
+  <!-- Story points circle -->
+  <circle cx="90" cy="48" r="18" fill="#36B37E"/>
+  <text x="90" y="54" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="18" font-weight="bold">5</text>
+
+  <!-- Lines representing ticket content -->
+  <rect x="32" y="44" width="36" height="6" rx="3" fill="#0052CC" opacity="0.3"/>
+  <rect x="32" y="56" width="50" height="4" rx="2" fill="#5E6C84" opacity="0.5"/>
+  <rect x="32" y="66" width="42" height="4" rx="2" fill="#5E6C84" opacity="0.5"/>
+  <rect x="32" y="76" width="48" height="4" rx="2" fill="#5E6C84" opacity="0.5"/>
+
+  <!-- Edit pencil icon -->
+  <g transform="translate(78, 70)">
+    <path d="M2 18 L0 24 L6 22 L20 8 L14 2 Z" fill="#FF991F"/>
+    <path d="M14 2 L20 8 L23 5 L17 -1 Z" fill="#DE350B"/>
+  </g>
+</svg>

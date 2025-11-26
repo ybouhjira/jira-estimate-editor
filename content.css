@@ -1,0 +1,188 @@
+/* Jira Estimate Editor - Content Styles */
+
+/* Highlight effect for tickets being updated */
+.jee-highlight {
+  outline: 3px solid #0052cc !important;
+  outline-offset: 2px !important;
+  transition: outline 0.2s ease-out;
+}
+
+/* Inline estimate badge overlay */
+.jee-inline-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: #0052cc;
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 10px;
+  z-index: 100;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* Toast notification */
+.jee-toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #172b4d;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  z-index: 100001;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 14px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  animation: jee-slide-in 0.3s ease-out;
+}
+
+.jee-toast.success {
+  background: #36b37e;
+}
+
+.jee-toast.error {
+  background: #de350b;
+}
+
+@keyframes jee-slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Estimate icon on cards */
+.jee-estimate-icon {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  width: 20px;
+  height: 20px;
+  background: #0052cc;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  z-index: 9999;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s, background 0.15s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.jee-estimate-icon:hover {
+  background: #0065ff;
+  transform: scale(1.1);
+}
+
+.jee-estimate-icon.has-value {
+  background: #36b37e;
+}
+
+/* Estimate popup on hover */
+.jee-estimate-popup {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  margin-bottom: 6px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  padding: 8px;
+  z-index: 999999;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(4px);
+  transition: opacity 0.15s, transform 0.15s, visibility 0.15s;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.jee-estimate-icon:hover .jee-estimate-popup,
+.jee-estimate-popup:hover {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.jee-estimate-popup-title {
+  font-size: 10px;
+  color: #5e6c84;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+  white-space: nowrap;
+}
+
+.jee-estimate-popup-buttons {
+  display: flex;
+  gap: 4px;
+  flex-wrap: nowrap;
+}
+
+.jee-estimate-popup-btn {
+  min-width: 28px;
+  height: 26px;
+  padding: 0 6px;
+  border: 1px solid #dfe1e6;
+  background: #f4f5f7;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #172b4d;
+  cursor: pointer;
+  transition: all 0.1s;
+  white-space: nowrap;
+}
+
+.jee-estimate-popup-btn:hover {
+  background: #0052cc;
+  color: white;
+  border-color: #0052cc;
+}
+
+.jee-estimate-popup-btn.active {
+  background: #36b37e;
+  color: white;
+  border-color: #36b37e;
+}
+
+/* Ensure card has relative positioning for absolute children */
+.ghx-issue,
+.ghx-issue-content,
+[data-testid*="card"],
+[data-rbd-draggable-id] {
+  position: relative;
+}
+
+/* Loading state */
+.jee-estimate-icon.loading {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.jee-estimate-icon.loading::after {
+  content: '';
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border: 2px solid white;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: jee-spin 0.6s linear infinite;
+}
+
+@keyframes jee-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
