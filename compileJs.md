@@ -1,4 +1,3 @@
-````markdown
 # Compiling TypeScript Files
 
 All **TypeScript (TS)** files need to be placed in the `src` folder.
@@ -12,6 +11,7 @@ When referencing compiled JavaScript files in your HTML, make sure to change the
 ```html
 <script src="popup.js"></script>
 ```
+
 ````
 
 **After:**
@@ -36,6 +36,5 @@ This will compile your TypeScript files into JavaScript.
 - The compiled JS files will be output in the `dist` folder.
 - Always update your HTML script tags to use `type="module"` when using compiled TS.
 
-```
 
-```
+````
