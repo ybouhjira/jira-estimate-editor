@@ -1,0 +1,31 @@
+:root {
+  --primary: #0052cc;
+  --primary-dark: #003d99;
+  --accent: #00b8d9;
+  --text: #172b4d;
+  --text-light: #5e6c84;
+  --bg: #fafbfc;
+  --card: #fff;
+  --white: #ffffff;
+  --success: #00875a;
+  --gradient: linear-gradient(135deg, #0052cc 0%, #00b8d9 100%);
+}
+
+/* Tema Dark con media query */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --primary: #3399ff;
+    --primary-dark: #1a73e8;
+    --accent: #00d9ff;
+    --text: #e1e1e1;
+    --text-light: #a1a1a1;
+    --bg: rgb(10, 13, 26);
+    --card: rgba(10, 13, 26, 0.7);
+    --card-secondary: rgba(255, 255, 255, 0.05);
+    --card-hover: rgba(73, 76, 85, 0.1);
+    --card-border: rgb(33, 36, 54);
+    --white: #ffffff;
+    --success: #00b894;
+    --gradient: linear-gradient(135deg, #3399ff 0%, #00d9ff 100%);
+  }
+}

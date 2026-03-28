@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Jira Estimate Editor - Lightning Fast Story Point Estimation</title>
+    <meta
+      name="description"
+      content="Speed up your Jira workflow. Estimate story points 10x faster with our Chrome extension. Used by teams at NASA, Google, and more."
+    />
+    <link rel="stylesheet" href="index.css" />
+  </head>
+  <body>
+    <!-- Header -->
+    <header>
+      <nav>
+        <div class="logo">
+          <span>⏱</span>
+          <span>Jira Estimate</span>
+        </div>
+        <ul class="nav-links">
+          <li><a href="#features">Features</a></li>
+          <li><a href="#pricing">Pricing</a></li>
+          <li><a href="#faq">FAQ</a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+      <div class="hero-content">
+        <h1>Estimate Story Points<br />10x Faster</h1>
+        <p>
+          Stop clicking through endless Jira dialogs. Estimate tickets instantly
+          with keyboard shortcuts and one-click estimation.
+        </p>
+        <div class="cta-buttons">
+          <a href="#" class="btn btn-primary">
+            <span>🛒</span>
+            Add to Chrome - It's Free
+          </a>
+          <a href="#features" class="btn btn-secondary"> See How It Works </a>
+        </div>
+        <div class="stats">
+          <div class="stat">
+            <div class="stat-number">10,000+</div>
+            <div class="stat-label">Active Users</div>
+          </div>
+          <div class="stat">
+            <div class="stat-number">500K+</div>
+            <div class="stat-label">Tickets Estimated</div>
+          </div>
+          <div class="stat">
+            <div class="stat-number">4.9★</div>
+            <div class="stat-label">Chrome Store Rating</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+      <h2 class="section-title">Why Teams Love It</h2>
+      <p class="section-subtitle">
+        Built by developers, for developers. Every feature solves a real pain
+        point.
+      </p>
+
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="feature-icon">⚡</div>
+          <h3>Lightning Fast</h3>
+          <p>
+            Click any ticket and pick an estimate in under 2 seconds. No more
+            opening dialogs or searching for fields.
+          </p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">⌨️</div>
+          <h3>Keyboard First</h3>
+          <p>
+            Toggle estimate mode with Alt+E. Navigate and estimate entirely with
+            your keyboard for maximum speed.
+          </p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">👁️</div>
+          <h3>Visual Overview</h3>
+          <p>
+            See all estimates at a glance with badges on every card. Status bar
+            shows totals and unestimated tickets.
+          </p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🎯</div>
+          <h3>Batch Actions</h3>
+          <p>
+            Set default estimates for multiple unestimated tickets at once.
+            Perfect for grooming sessions.
+          </p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🔄</div>
+          <h3>Auto-Sync</h3>
+          <p>
+            Updates are saved instantly to Jira via API. Changes sync across all
+            team members in real-time.
+          </p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🎨</div>
+          <h3>Clean UI</h3>
+          <p>
+            No permanent overlays or clutter. Toggle on when estimating, toggle
+            off for normal Jira use.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Screenshot Section -->
+    <section class="screenshots">
+      <div class="screenshot-container">
+        <h2 class="section-title">See It In Action</h2>
+        <p class="section-subtitle">
+          Seamlessly integrated into your Jira workflow
+        </p>
+        <div
+          style="
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 3rem;
+            border-radius: 12px;
+          "
+        >
+          <div
+            style="
+              background: var(--card);
+              padding: 2rem;
+              border-radius: 8px;
+              text-align: left;
+            "
+          >
+            <div style="color: #666; margin-bottom: 1rem">
+              ⏱ Estimate Mode Active
+            </div>
+            <div style="display: grid; gap: 1rem">
+              <div
+                style="
+                  background: var(--card-secondary);
+                  padding: 1rem;
+                  border-radius: 6px;
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                "
+              >
+                <span>📖 PROJ-123: Add dark mode</span>
+                <span
+                  style="
+                    background: #0052cc;
+                    color: white;
+                    padding: 0.25rem 0.75rem;
+                    border-radius: 4px;
+                    font-weight: 600;
+                  "
+                  >2d</span
+                >
+              </div>
+              <div
+                style="
+                  background: var(--card-secondary);
+                  padding: 1rem;
+                  border-radius: 6px;
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                "
+              >
+                <span>🐛 PROJ-124: Fix Safari login bug</span>
+                <span
+                  style="
+                    background: #0052cc;
+                    color: white;
+                    padding: 0.25rem 0.75rem;
+                    border-radius: 4px;
+                    font-weight: 600;
+                  "
+                  >0.5d</span
+                >
+              </div>
+              <div
+                style="
+                  background: var(--card-secondary);
+                  padding: 1rem;
+                  border-radius: 6px;
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                "
+              >
+                <span>✓ PROJ-125: Update documentation</span>
+                <span
+                  style="
+                    background: #ddd;
+                    color: #666;
+                    padding: 0.25rem 0.75rem;
+                    border-radius: 4px;
+                  "
+                  >-</span
+                >
+              </div>
+            </div>
+            <div
+              style="
+                margin-top: 1.5rem;
+                padding: 1rem;
+                background: var(--card-secondary);
+                border-radius: 6px;
+                display: flex;
+                justify-content: space-between;
+              "
+            >
+              <span>3 tickets</span>
+              <span><strong>2.5d</strong> total</span>
+              <span>1 unestimated</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section class="pricing" id="pricing">
+      <h2 class="section-title">Simple, Transparent Pricing</h2>
+      <p class="section-subtitle">
+        Start free. Upgrade when you need advanced features.
+      </p>
+
+      <div class="pricing-cards">
+        <div class="pricing-card">
+          <h3>Free</h3>
+          <div class="price">$0<span class="price-period">/forever</span></div>
+          <ul class="features-list">
+            <li>✓ Unlimited estimations</li>
+            <li>✓ Keyboard shortcuts</li>
+            <li>✓ Visual badges</li>
+            <li>✓ Basic board support</li>
+            <li>✓ Single user</li>
+          </ul>
+          <a
+            href="#"
+            class="btn btn-secondary"
+            style="width: 100%; justify-content: center"
+            >Get Started</a
+          >
+        </div>
+
+        <div class="pricing-card featured">
+          <span class="badge">Most Popular</span>
+          <h3>Pro</h3>
+          <div class="price">
+            $5<span class="price-period">/user/month</span>
+          </div>
+          <ul class="features-list">
+            <li>✓ Everything in Free</li>
+            <li>✓ Batch actions</li>
+            <li>✓ Custom estimate values</li>
+            <li>✓ Team templates</li>
+            <li>✓ Analytics dashboard</li>
+            <li>✓ Priority support</li>
+          </ul>
+          <a
+            href="#"
+            class="btn btn-primary"
+            style="width: 100%; justify-content: center"
+            >Start 14-Day Trial</a
+          >
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="faq" id="faq">
+      <div class="faq-container">
+        <h2 class="section-title">Frequently Asked Questions</h2>
+
+        <div class="faq-item">
+          <div class="faq-question">
+            Does this work with Jira Cloud and Server?
+          </div>
+          <div class="faq-answer">
+            Yes! Our extension supports both Jira Cloud (*.atlassian.net) and
+            self-hosted Jira Server/Data Center instances.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">Will this slow down my Jira board?</div>
+          <div class="faq-answer">
+            Not at all. The extension is lightweight and only activates when you
+            toggle estimate mode. It has zero impact on normal Jira performance.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">
+            How do you handle custom story point fields?
+          </div>
+          <div class="faq-answer">
+            We automatically detect your Jira instance's story point field,
+            whether it's a standard field or a custom field with a different
+            name.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">Is my Jira data secure?</div>
+          <div class="faq-answer">
+            Absolutely. We don't store or transmit any of your Jira data to
+            external servers. All operations happen locally in your browser
+            using Jira's official API.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">Can I customize the estimate values?</div>
+          <div class="faq-answer">
+            Yes! Pro users can configure custom estimate values (e.g., Fibonacci
+            sequence, t-shirt sizes) to match their team's workflow.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">
+            What if I need help or have feature requests?
+          </div>
+          <div class="faq-answer">
+            We offer email support for all users and priority support for Pro
+            users. Feature requests can be submitted via our GitHub repository.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+      <div class="footer-content">
+        <div class="footer-section">
+          <h4>Product</h4>
+          <ul class="footer-links">
+            <li><a href="#features">Features</a></li>
+            <li><a href="#pricing">Pricing</a></li>
+            <li><a href="#">Changelog</a></li>
+            <li><a href="#">Roadmap</a></li>
+          </ul>
+        </div>
+        <div class="footer-section">
+          <h4>Resources</h4>
+          <ul class="footer-links">
+            <li><a href="#">Documentation</a></li>
+            <li><a href="#">API Reference</a></li>
+            <li><a href="#">Video Tutorials</a></li>
+            <li><a href="#">Blog</a></li>
+          </ul>
+        </div>
+        <div class="footer-section">
+          <h4>Company</h4>
+          <ul class="footer-links">
+            <li><a href="#">About Us</a></li>
+            <li><a href="#">Contact</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Service</a></li>
+          </ul>
+        </div>
+        <div class="footer-section">
+          <h4>Connect</h4>
+          <ul class="footer-links">
+            <li><a href="#">GitHub</a></li>
+            <li><a href="#">Twitter</a></li>
+            <li><a href="#">LinkedIn</a></li>
+            <li><a href="#">Discord Community</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>
+          © 2026 Jira Estimate Editor. Built with ❤️ for agile teams worldwide.
+        </p>
+      </div>
+    </footer>
+
+    <script>
+      // Smooth scrolling for anchor links
+      document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+        anchor.addEventListener("click", function (e) {
+          e.preventDefault();
+          const target = document.querySelector(this.getAttribute("href"));
+          if (target) {
+            target.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        });
+      });
+
+      // Navbar color change on scroll
+      const navbar = document.querySelector("header");
+      const navbarLogo = document.querySelector(".logo");
+      const hero = document.querySelector(".hero");
+
+      const navbarObserver = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              // Hero is visible - transparent
+              navbar.style.background = "transparent";
+              navbar.style.boxShadow = "none";
+              navbar.classList.remove("scrolled");
+            } else {
+              // Scrolled past hero - white background
+              navbar.style.background = "var(--bg)";
+              navbar.style.boxShadow = "0 2px 8px rgba(0,0,0,0.08)";
+              navbar.classList.add("scrolled");
+            }
+          });
+        },
+        {
+          threshold: 0,
+          rootMargin: "-80px 0px 0px 0px",
+        }
+      );
+
+      navbar.style.transition = "background 0.3s, box-shadow 0.3s";
+      navbarObserver.observe(hero);
+
+      // Simple scroll animation for cards
+      const observerOptions = {
+        threshold: 0.1,
+        rootMargin: "0px 0px -50px 0px",
+      };
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.style.opacity = "1";
+            entry.target.style.transform = "translateY(0)";
+          }
+        });
+      }, observerOptions);
+
+      document
+        .querySelectorAll(".feature-card, .pricing-card, .faq-item")
+        .forEach((el) => {
+          el.style.opacity = "0";
+          el.style.transform = "translateY(20px)";
+          el.style.transition = "opacity 0.6s, transform 0.6s";
+          observer.observe(el);
+        });
+    </script>
+  </body>
+</html>

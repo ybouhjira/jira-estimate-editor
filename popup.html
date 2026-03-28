@@ -1,53 +1,55 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Jira Estimate Editor</title>
-  <link rel="stylesheet" href="popup.css">
-</head>
-<body>
-  <div class="container">
-    <header>
-      <h1>📊 Jira Estimates</h1>
-      <button id="refreshBtn" class="btn-icon" title="Refresh">🔄</button>
-    </header>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Jira Estimate Editor</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>📊 Jira Estimates</h1>
+        <button id="refreshBtn" class="btn-icon" title="Refresh">🔄</button>
+      </header>
 
-    <div id="notJiraPage" class="message hidden">
-      <p>⚠️ This doesn't appear to be a Jira page.</p>
-      <p class="hint">Navigate to your Jira board or backlog to use this extension.</p>
-    </div>
-
-    <div id="loading" class="message">
-      <p>🔍 Scanning for tickets...</p>
-    </div>
-
-    <div id="noTickets" class="message hidden">
-      <p>No tickets found on this page.</p>
-      <p class="hint">Try opening a board, backlog, or sprint view.</p>
-    </div>
-
-    <div id="ticketList" class="ticket-list hidden">
-      <div class="summary-bar">
-        <span id="ticketCount">0 tickets</span>
-        <span id="totalEstimate">Total: 0 pts</span>
+      <div id="notJiraPage" class="message hidden">
+        <p>⚠️ This doesn't appear to be a Jira page.</p>
+        <p class="hint">
+          Navigate to your Jira board or backlog to use this extension.
+        </p>
       </div>
-      <div id="tickets"></div>
-    </div>
 
-    <div class="quick-actions hidden" id="quickActions">
-      <h3>Quick Set All</h3>
-      <div class="estimate-buttons">
-        <button class="estimate-btn" data-value="1">1</button>
-        <button class="estimate-btn" data-value="2">2</button>
-        <button class="estimate-btn" data-value="3">3</button>
-        <button class="estimate-btn" data-value="5">5</button>
-        <button class="estimate-btn" data-value="8">8</button>
-        <button class="estimate-btn" data-value="13">13</button>
+      <div id="loading" class="message">
+        <p>🔍 Scanning for tickets...</p>
+      </div>
+
+      <div id="noTickets" class="message hidden">
+        <p>No tickets found on this page.</p>
+        <p class="hint">Try opening a board, backlog, or sprint view.</p>
+      </div>
+
+      <div id="ticketList" class="ticket-list hidden">
+        <div class="summary-bar">
+          <span id="ticketCount">0 tickets</span>
+          <span id="totalEstimate">Total: 0 pts</span>
+        </div>
+        <div id="tickets"></div>
+      </div>
+
+      <div class="quick-actions hidden" id="quickActions">
+        <h3>Quick Set All</h3>
+        <div class="estimate-buttons">
+          <button class="estimate-btn" data-value="1">1</button>
+          <button class="estimate-btn" data-value="2">2</button>
+          <button class="estimate-btn" data-value="3">3</button>
+          <button class="estimate-btn" data-value="5">5</button>
+          <button class="estimate-btn" data-value="8">8</button>
+          <button class="estimate-btn" data-value="13">13</button>
+        </div>
       </div>
     </div>
-  </div>
 
-  <script src="popup.js"></script>
-</body>
+    <script type="module" src="/dist/popup.js"></script>
+  </body>
 </html>
