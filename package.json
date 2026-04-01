@@ -1,0 +1,24 @@
+{
+  "name": "jira-estimate-editor",
+  "version": "1.0.0",
+  "main": "content.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Alessio99-a/jira-estimate-editor.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Alessio99-a/jira-estimate-editor/issues"
+  },
+  "homepage": "https://github.com/Alessio99-a/jira-estimate-editor#readme",
+  "description": "",
+  "devDependencies": {
+    "@types/chrome": "^0.1.32",
+    "typescript": "^5.9.3"
+  }
+}
